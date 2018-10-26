@@ -31,7 +31,7 @@ class ptr_int_pair_48va {
         // bitfields larger than the size of IntType.
         union int_type {
             IntType v;
-            char p[2];
+            unsigned char p[2];
         } i;
     };
 
@@ -58,9 +58,16 @@ class ptr_int_pair_48va {
     // Helper functions
     //
 
+#ifdef _MSC_VER
+#pragma warning(push)  
+#pragma warning(disable : 4800)  
+#endif
     static constexpr bool is_bit_47_set(std::uintptr_t raw) {
         return raw & bit_47_mask;
     }
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
     static constexpr std::uintptr_t compact_ptr_int_pair_helper(std::uintptr_t ptr_raw, std::uintptr_t i_offset) {
         return is_bit_47_set(ptr_raw) ? (i_offset | high_bits_mask_flip) & ptr_raw
@@ -69,6 +76,11 @@ class ptr_int_pair_48va {
 
     static constexpr std::uintptr_t compact_ptr_int_pair(PtrType* ptr, IntType i) {
         return compact_ptr_int_pair_helper(reinterpret_cast<std::uintptr_t>(ptr), static_cast<std::uintptr_t>(i) << high_bits_offset);
+    }
+
+    constexpr bool logical_lt_helper(std::uintptr_t lhs_ptr, std::uintptr_t rhs_ptr, const ptr_int_pair_48va &other) const {
+        return lhs_ptr < rhs_ptr ||
+               (lhs_ptr == rhs_ptr && integer() < other.integer());
     }
 
 public:
@@ -114,25 +126,48 @@ public:
     //
     // Comparators
     //
-    // We cannot just do a raw buffer comparison because the buffer
-    // reserved for IntType may have uninitialised padding.
-    //
 
     constexpr bool operator==(const ptr_int_pair_48va &other) const {
-        std::uintptr_t lhs_ptr = m_buffer.raw & high_bits_mask_flip;
-        std::uintptr_t rhs_ptr = other.m_buffer.raw & high_bits_mask_flip;
-        return lhs_ptr == rhs_ptr &&
-               integer() == other.integer();
+        return m_buffer.raw == other.m_buffer.raw;
     }
 
     constexpr bool operator!=(const ptr_int_pair_48va &other) const {
         return !operator==(other);
     }
 
-    constexpr bool operator<(const ptr_int_pair_48va &other) const {
-        std::uintptr_t lhs_ptr = m_buffer.raw & high_bits_mask_flip;
-        std::uintptr_t rhs_ptr = other.m_buffer.raw & high_bits_mask_flip;
-        return lhs_ptr < rhs_ptr ||
-               (lhs_ptr == rhs_ptr && integer() < other.integer());
+    constexpr bool logical_lt(const ptr_int_pair_48va &other) const {
+        return logical_lt_helper(m_buffer.raw & high_bits_mask_flip,
+                                 other.m_buffer.raw & high_bits_mask_flip,
+                                 other);
     }
+
+    constexpr bool opaque_lt(const ptr_int_pair_48va &other) const {
+        return m_buffer.raw < other.m_buffer.raw;
+    }
+
+    struct logical_comparator {
+        constexpr bool operator()(const ptr_int_pair_48va &lhs, const ptr_int_pair_48va &rhs) const {
+            return lhs.logical_lt(rhs);
+        }
+    };
+
+    struct opaque_comparator {
+        constexpr bool operator()(const ptr_int_pair_48va &lhs, const ptr_int_pair_48va &rhs) const {
+            return lhs.opaque_lt(rhs);
+        }
+    };
 };
+
+namespace use_ptr_int_pair_48va_logical_lt {
+    template <typename PtrType, typename IntType>
+    constexpr bool operator<(const ptr_int_pair_48va<PtrType, IntType> &lhs, const ptr_int_pair_48va<PtrType, IntType> &rhs) {
+        return lhs.logical_lt(rhs);
+    }
+}
+
+namespace use_ptr_int_pair_48va_opaque_lt {
+    template <typename PtrType, typename IntType>
+    constexpr bool operator<(const ptr_int_pair_48va<PtrType, IntType> &lhs, const ptr_int_pair_48va<PtrType, IntType> &rhs) {
+        return lhs.opaque_lt(rhs);
+    }
+}
