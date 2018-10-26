@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <type_traits>
 
 template <typename PtrType, typename IntType>
 class ptr_int_pair_48va {
@@ -121,6 +122,10 @@ public:
 
     inline void integer(IntType i) noexcept {
         m_buffer.view.i.v = i;
+    }
+
+    inline std::enable_if_t<!std::is_const<IntType>::value> clear() noexcept {
+        m_buffer.raw = 0;
     }
 
     //

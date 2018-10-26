@@ -520,10 +520,6 @@ TEST_CASE("less than") {
     }
 }
 
-//
-// TODO: modifiers
-//
-
 TEST_CASE("modifiers") {
     GIVEN("int bool pair") {
         ptr_int_pair_48va<int, bool> p;
@@ -577,11 +573,62 @@ TEST_CASE("modifiers") {
     }
 }
 
-//
-// Containers
-//
+TEST_CASE("clear") {
+    GIVEN("int bool pair") {
+        int x = 1;
+        ptr_int_pair_48va<int, bool> p{ &x, true };
 
-// Big buffer to make sure both high bit cases are addressed.
+        p.clear();
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == false);
+    }
+
+    GIVEN("int char pair") {
+        int x = 2;
+        ptr_int_pair_48va<int, char> p{ &x, 'z' };
+
+        p.clear();
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == 0);
+    }
+
+    GIVEN("int short pair") {
+        int x = 3;
+        ptr_int_pair_48va<int, short> p{ &x, 256 };
+
+        p.clear();
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == 0);
+    }
+
+    GIVEN("int* bool pair") {
+        int x = 4;
+        int* x_ptr = &x;
+        ptr_int_pair_48va<int*, short> p{ &x_ptr, 11 };
+
+        p.clear();
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == 0);
+    }
+
+    GIVEN("const int bool pair") {
+        const int x = 5;
+        ptr_int_pair_48va<const int, bool> p{ &x, true };
+
+        p.clear();
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == 0);
+    }
+
+    GIVEN("string bool pair") {
+        std::string str = "foo";
+        ptr_int_pair_48va<std::string, bool> p{ &str, true };
+
+        p.clear();
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == false);
+    }
+}
 
 TEST_CASE("containers") {
     GIVEN("vector") {
