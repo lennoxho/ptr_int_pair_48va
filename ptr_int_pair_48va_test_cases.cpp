@@ -1,4 +1,5 @@
-#include "ptr_int_pair_48va_test.h"
+#include "test.h"
+#include "ptr_int_pair_48va.h"
 
 #include <set>
 #include <vector>
@@ -625,6 +626,100 @@ TEST_CASE("clear") {
         ptr_int_pair_48va<std::string, bool> p{ &str, true };
 
         p.clear();
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == false);
+    }
+}
+
+TEST_CASE("swap") {
+    GIVEN("int bool pair") {
+        int x = 1;
+        ptr_int_pair_48va<int, bool> p{ &x, true };
+        ptr_int_pair_48va<int, bool> q{ nullptr, false };
+
+        REQUIRE(p.pointer() == &x);
+        REQUIRE(p.integer() == true);
+        REQUIRE(q.pointer() == nullptr);
+        REQUIRE(q.integer() == false);
+
+        p.swap(q);
+        CHECK(q.pointer() == &x);
+        CHECK(q.integer() == true);
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == false);
+
+        swap(p, q);
+        CHECK(p.pointer() == &x);
+        CHECK(p.integer() == true);
+        CHECK(q.pointer() == nullptr);
+        CHECK(q.integer() == false);
+
+        swap(q, p);
+        CHECK(q.pointer() == &x);
+        CHECK(q.integer() == true);
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == false);
+
+        q.swap(p);
+        CHECK(p.pointer() == &x);
+        CHECK(p.integer() == true);
+        CHECK(q.pointer() == nullptr);
+        CHECK(q.integer() == false);
+    }
+
+    GIVEN("string bool pair") {
+        std::string str = "foo";
+        ptr_int_pair_48va<std::string, bool> p{ &str, true };
+        ptr_int_pair_48va<std::string, bool> q{ nullptr, false };
+
+        REQUIRE(p.pointer() == &str);
+        REQUIRE(p.integer() == true);
+        REQUIRE(q.pointer() == nullptr);
+        REQUIRE(q.integer() == false);
+
+        p.swap(q);
+        CHECK(q.pointer() == &str);
+        CHECK(q.integer() == true);
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == false);
+
+        swap(p, q);
+        CHECK(p.pointer() == &str);
+        CHECK(p.integer() == true);
+        CHECK(q.pointer() == nullptr);
+        CHECK(q.integer() == false);
+
+        swap(q, p);
+        CHECK(q.pointer() == &str);
+        CHECK(q.integer() == true);
+        CHECK(p.pointer() == nullptr);
+        CHECK(p.integer() == false);
+
+        q.swap(p);
+        CHECK(p.pointer() == &str);
+        CHECK(p.integer() == true);
+        CHECK(q.pointer() == nullptr);
+        CHECK(q.integer() == false);
+    }
+
+    SECTION("scope") {
+        std::string str = "foo";
+        ptr_int_pair_48va<std::string, bool> p{ &str, true };
+        REQUIRE(p.pointer() == &str);
+        REQUIRE(p.integer() == true);
+
+        WHEN("scope") {
+            ptr_int_pair_48va<std::string, bool> q{ nullptr, false };
+            REQUIRE(q.pointer() == nullptr);
+            REQUIRE(q.integer() == false);
+
+            swap(p, q);
+            CHECK(q.pointer() == &str);
+            CHECK(q.integer() == true);
+            CHECK(p.pointer() == nullptr);
+            CHECK(p.integer() == false);
+        }
+
         CHECK(p.pointer() == nullptr);
         CHECK(p.integer() == false);
     }

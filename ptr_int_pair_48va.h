@@ -11,8 +11,12 @@ class ptr_int_pair_48va {
     // Constants
     //
 
+public:
+
     static constexpr int ptr_size_requirement = 8;
     static constexpr int int_size_limit = 2;
+
+private:
 
     static constexpr int high_bits_offset = 48;
     static constexpr std::uintptr_t high_bits_mask_set = std::uintptr_t(std::numeric_limits<std::uint16_t>::max()) << high_bits_offset;
@@ -94,11 +98,11 @@ public:
     :m_buffer{ 0 }
     {}
 
-    ptr_int_pair_48va(PtrType* ptr) noexcept
+    constexpr ptr_int_pair_48va(PtrType* ptr)
     :m_buffer{ compact_ptr_int_pair(ptr, IntType{}) }
     {}
     
-    ptr_int_pair_48va(PtrType* ptr, IntType i) noexcept
+    constexpr ptr_int_pair_48va(PtrType* ptr, IntType i)
     :m_buffer{ compact_ptr_int_pair(ptr, i) }
     {}
 
@@ -124,8 +128,14 @@ public:
         m_buffer.view.i.v = i;
     }
 
+    // Modifiers
+
     inline std::enable_if_t<!std::is_const<IntType>::value> clear() noexcept {
         m_buffer.raw = 0;
+    }
+
+    inline std::enable_if_t<!std::is_const<IntType>::value> swap(ptr_int_pair_48va &other) noexcept {
+        std::swap(m_buffer.raw, other.m_buffer.raw);
     }
 
     //
@@ -175,4 +185,9 @@ namespace use_ptr_int_pair_48va_opaque_lt {
     constexpr bool operator<(const ptr_int_pair_48va<PtrType, IntType> &lhs, const ptr_int_pair_48va<PtrType, IntType> &rhs) {
         return lhs.opaque_lt(rhs);
     }
+}
+
+template <typename PtrType, typename IntType>
+inline void swap(ptr_int_pair_48va<PtrType, IntType> &lhs, ptr_int_pair_48va<PtrType, IntType> &rhs) noexcept {
+    lhs.swap(rhs);
 }
