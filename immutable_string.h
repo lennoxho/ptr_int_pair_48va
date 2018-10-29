@@ -37,14 +37,14 @@
 struct constexpr_op_t {};
 static constexpr constexpr_op_t constexpr_op;
 
-template <typename CharType, bool StrongImmutability>
+template <typename CharType, bool StrongImmutability, typename Ignored>
 class basic_immutable_string_impl { basic_immutable_string_impl() = delete; };
 
 template <typename CharType, bool StrongImmutability>
 class basic_immutable_string { basic_immutable_string() = delete; };
 
 template <typename CharType, bool StrongImmutability, typename Comparator>
-using basic_immutable_string_view = basic_immutable_string_impl<CharType, StrongImmutability>;
+using basic_immutable_string_view = basic_immutable_string_impl<CharType, StrongImmutability, Comparator>;
 
 namespace detail {
 
@@ -65,8 +65,8 @@ namespace detail {
     template <typename T, typename CharType, typename Comparator>
     struct is_comparable_immutable_string<T, CharType, Comparator,
                                           std::enable_if_t<is_in<std::decay_t<T>,
-                                                           basic_immutable_string_impl<CharType, false>,
-                                                           basic_immutable_string_impl<CharType, true>,
+                                                           basic_immutable_string_impl<CharType, false, void>,
+                                                           basic_immutable_string_impl<CharType, true, void>,
                                                            basic_immutable_string<CharType, false>,
                                                            basic_immutable_string<CharType, true>,
                                                            basic_immutable_string_view<CharType, false, Comparator>,
@@ -112,8 +112,8 @@ constexpr std::size_t ct_strlen(const char* str) {
                         : ct_strlen(str + 1) + 1;
 }
 
-template <bool StrongImmutability>
-class basic_immutable_string_impl<char, StrongImmutability> {
+template <bool StrongImmutability, typename Ignored>
+class basic_immutable_string_impl<char, StrongImmutability, Ignored> {
 
 public:
 
@@ -198,10 +198,14 @@ public:
     {}
 #endif
 
-    basic_immutable_string_impl(const basic_immutable_string<char, true> &str) noexcept;
+    basic_immutable_string_impl(const basic_immutable_string<char, true> &str) noexcept
+    :m_buffer{ str.m_buffer }
+    {}
 
     template <typename = std::enable_if_t<!StrongImmutability>>
-    basic_immutable_string_impl(const basic_immutable_string<char, false> &str) noexcept;
+    basic_immutable_string_impl(const basic_immutable_string<char, false> &str) noexcept
+    :m_buffer{ str.m_buffer }
+    {}
 
     template <typename Traits, typename Allocator, typename = std::enable_if_t<!StrongImmutability>>
     inline basic_immutable_string_impl &operator=(const std::basic_string<value_type, Traits, Allocator> &str) {
@@ -224,7 +228,10 @@ public:
 #endif
 
     template <bool StrongImm, typename = std::enable_if_t<!StrongImmutability>>
-    basic_immutable_string_impl &operator=(const basic_immutable_string<char, StrongImm> &str) noexcept;
+    basic_immutable_string_impl &operator=(const basic_immutable_string<char, StrongImm> &str) noexcept {
+        m_buffer = buffer_type{ str.m_buffer };
+        return *this;
+    }
 
     template <typename = std::enable_if_t<!StrongImmutability>>
     inline basic_immutable_string_impl &operator=(const basic_immutable_string_impl &other) noexcept {
@@ -318,9 +325,9 @@ public:
 };
 
 template <bool StrongImmutability>
-class basic_immutable_string<char, StrongImmutability> : public basic_immutable_string_impl<char, StrongImmutability> {
+class basic_immutable_string<char, StrongImmutability> : public basic_immutable_string_impl<char, StrongImmutability, void> {
 
-    using base_type = basic_immutable_string_impl<char, StrongImmutability>;
+    using base_type = basic_immutable_string_impl<char, StrongImmutability, void>;
 
 public:
 
@@ -439,24 +446,6 @@ public:
 
 };
 
-template <bool StrongImmutability>
-basic_immutable_string_impl<char, StrongImmutability>::basic_immutable_string_impl(const basic_immutable_string<char, true> &str) noexcept
-:m_buffer{ str.m_buffer }
-{}
-
-template <>
-template <typename>
-basic_immutable_string_impl<char, false>::basic_immutable_string_impl(const basic_immutable_string<char, false> &str) noexcept
-:m_buffer{ str.m_buffer }
-{}
-
-template <>
-template <bool StrongImmutability, typename>
-basic_immutable_string_impl<char, false>& basic_immutable_string_impl<char, false>::operator=(const basic_immutable_string<char, StrongImmutability> &str) noexcept {
-    m_buffer = buffer_type{ str.m_buffer };
-    return *this;
-}
-
 template <typename Lhs, typename Rhs>
 inline std::enable_if_t<is_comparable_as_immutable_strings<Lhs, Rhs>::value, bool>
 operator<(const Lhs &lhs,
@@ -508,9 +497,9 @@ operator!=(const Lhs &lhs,
 
 namespace std {
 
-    template <typename CharType, typename Traits, bool StrongImmutability>
+    template <typename CharType, typename Traits, bool StrongImmutability, typename Ignored>
     inline std::basic_ostream<CharType, Traits> &operator<<(std::basic_ostream<CharType, Traits> &os, 
-                                                            const basic_immutable_string_impl<CharType, StrongImmutability> &str)
+                                                            const basic_immutable_string_impl<CharType, StrongImmutability, Ignored> &str)
     {
         return os.write(str.c_str(), str.size());
     }
@@ -522,8 +511,8 @@ namespace std {
         return os.write(str.c_str(), str.size());
     }
 
-    template <typename CharType>
-    inline void swap(basic_immutable_string_impl<CharType, false> &lhs, basic_immutable_string_impl<CharType, false> &rhs) noexcept {
+    template <typename CharType, typename Ignored>
+    inline void swap(basic_immutable_string_impl<CharType, false, Ignored> &lhs, basic_immutable_string_impl<CharType, false, Ignored> &rhs) noexcept {
         lhs.swap(rhs);
     }
 
@@ -534,8 +523,8 @@ namespace std {
 
 }
 
-using weak_immutable_string_impl = basic_immutable_string_impl<char, false>;
-using weak_immutable_string_impl = basic_immutable_string_impl<char, true>;
+using weak_immutable_string_impl = basic_immutable_string_impl<char, false, void>;
+using weak_immutable_string_impl = basic_immutable_string_impl<char, true, void>;
 using weak_immutable_string = basic_immutable_string<char, false>;
 using strong_immutable_string = basic_immutable_string<char, true>;
 template <typename Comparator>
